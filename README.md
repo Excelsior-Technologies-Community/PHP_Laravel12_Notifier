@@ -1,59 +1,264 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# PHP_Laravel12_Notifier
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A complete and beginner-friendly Laravel 12 project that demonstrates how to implement **Email and Database Notifications** using Laravel's built-in notification system. This project includes user management, multiple notification types, API-based notification handling, and an optional web dashboard.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* Laravel 12 notification system implementation
+* Email + Database notifications
+* Multiple notification types (Welcome, Order Shipped, Invoice Paid)
+* API-based notification sending
+* User notification listing
+* Mark single / all notifications as read
+* Delete notifications
+* Optional web dashboard (Tailwind CSS)
+* Clean and scalable structure
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Requirements
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+* PHP 8.1 or higher
+* Laravel 12.x
+* Composer
+* MySQL
+* Mailtrap (for email testing)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Step 1: Create a New Laravel Project
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+composer create-project laravel/laravel LaravelNotifier
+cd LaravelNotifier
+composer require guzzlehttp/guzzle
+```
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Step 2: Configure Database
 
-## Contributing
+Update `.env` file:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=laravel_notifier
+DB_USERNAME=root
+DB_PASSWORD=
+```
 
-## Code of Conduct
+Create database `laravel_notifier`.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Step 3: Create Notifications Table
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan make:migration create_notifications_table
+php artisan migrate
+```
+
+Laravel stores notifications in this table using UUIDs.
+
+---
+
+## Step 4: Create Notification Classes
+
+```bash
+php artisan make:notification WelcomeNotification
+php artisan make:notification OrderShippedNotification
+php artisan make:notification InvoicePaidNotification
+```
+
+Each notification supports:
+
+* `via()` for channels (mail, database)
+* `toMail()` for email content
+* `toArray()` for database storage
+
+---
+
+## Step 5: User Model Configuration
+
+Ensure `Notifiable` trait is added:
+
+```php
+use Illuminate\Notifications\Notifiable;
+```
+
+This enables notification support for users.
+
+---
+
+## Step 6: Mail Configuration (Mailtrap)
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=your_mailtrap_username
+MAIL_PASSWORD=your_mailtrap_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=hello@example.com
+MAIL_FROM_NAME="Laravel Notifier"
+```
+
+---
+
+## Step 7: Controllers
+
+### NotificationController Responsibilities
+
+* Send welcome notification
+* Send order shipped notification
+* Broadcast notifications
+* Fetch user notifications
+* Mark notification as read
+* Mark all as read
+* Delete notifications
+
+### UserController Responsibilities
+
+* Create test users
+* List users
+
+---
+
+## Step 8: API Routes
+
+Defined in `routes/api.php`:
+
+* Create users
+* Send notifications
+* Fetch notifications
+* Update notification status
+
+---
+
+## Step 9: Web Dashboard (Optional)
+
+A simple Tailwind CSS dashboard:
+
+* Create users
+* Send notifications
+* View notifications
+* Mark as read
+* Delete notifications
+
+File:
+
+```text
+resources/views/notifications/index.blade.php
+```
+
+---
+
+## Step 10: Web Route
+
+```php
+Route::get('/', function () {
+    return view('notifications.index');
+});
+```
+
+---
+
+## Step 11: Run the Application
+
+```bash
+php artisan key:generate
+php artisan migrate
+php artisan serve
+```
+
+Visit:
+
+```
+http://localhost:8000
+```
+---
+## Screenshot
+<img width="1810" height="892" alt="image" src="https://github.com/user-attachments/assets/56a0cdc5-e817-49d7-8526-d8a1d8dd11e3" />
+<img width="1880" height="965" alt="image" src="https://github.com/user-attachments/assets/a54fc6b2-4a14-4cfd-9e75-97efa2da007e" />
+<img width="1514" height="858" alt="image" src="https://github.com/user-attachments/assets/f471dbd7-f855-464c-b13b-8740ef56c964" />
+
+
+
+---
+
+## Step 12: Testing Flow
+
+1. Create a user
+2. Select the user
+3. Send notifications
+4. View notifications
+5. Mark read / delete
+
+---
+
+## Database Structure
+
+### notifications table
+
+* id (UUID)
+* type
+* notifiable_type
+* notifiable_id
+* data (JSON)
+* read_at
+* timestamps
+
+---
+
+## API Endpoints Summary
+
+| Method | Endpoint                                   | Description          |
+| ------ | ------------------------------------------ | -------------------- |
+| POST   | /api/users                                 | Create user          |
+| GET    | /api/users                                 | List users           |
+| POST   | /api/notifications/welcome/{id}            | Welcome notification |
+| POST   | /api/notifications/order-shipped/{id}      | Order shipped        |
+| GET    | /api/notifications/user/{id}               | Get notifications    |
+| POST   | /api/notifications/mark-as-read/{id}/{nid} | Mark read            |
+| DELETE | /api/notifications/delete/{id}/{nid}       | Delete               |
+
+---
+
+## Possible Enhancements
+
+* Real-time notifications (Pusher + Echo)
+* SMS notifications (Twilio / Vonage)
+* Scheduled notifications (Queues)
+* Notification preferences per user
+* Admin analytics dashboard
+
+---
+
+## Learning Outcomes
+
+* Laravel Notification System
+* Email + Database notifications
+* REST API design
+* UUID-based storage
+* Clean MVC architecture
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
+
+---
+
+## Author
+
+Mihir Mehta
+Laravel Developer
+
+---
+
+This project is ideal for learning, interviews, MCA projects, and real-world notification workflows.
