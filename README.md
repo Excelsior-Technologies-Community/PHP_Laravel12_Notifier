@@ -1,4 +1,4 @@
-# Laravel 12 Notification System (Laravel Notifier)
+# PHP_Laravel12_Notifier
 
 A complete and beginner-friendly Laravel 12 project that demonstrates how to implement **Email and Database Notifications** using Laravel's built-in notification system. This project includes user management, multiple notification types, API-based notification handling, and an optional web dashboard.
 
