@@ -3,7 +3,6 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -18,17 +17,23 @@ class WelcomeNotification extends Notification
 
     public function via(object $notifiable): array
     {
+        $preferences = $notifiable->getOrCreateNotificationPreference();
+
+        if (! $preferences->welcome_enabled) {
+            return [];
+        }
+
         return ['mail', 'database'];
     }
 
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->subject('Welcome to Our Application!')
-                    ->greeting('Hello ' . $notifiable->name . '!')
-                    ->line('Thank you for registering with us.')
-                    ->action('Get Started', url('/dashboard'))
-                    ->line('If you have any questions, feel free to contact us.');
+            ->subject('Welcome to Our Application!')
+            ->greeting('Hello ' . $notifiable->name . '!')
+            ->line('Thank you for registering with us.')
+            ->action('Get Started', url('/dashboard'))
+            ->line('If you have any questions, feel free to contact us.');
     }
 
     public function toArray(object $notifiable): array
