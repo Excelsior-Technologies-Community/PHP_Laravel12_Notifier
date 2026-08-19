@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -43,5 +44,19 @@ class User extends Authenticatable
         return $this->notificationPreference()->firstOrCreate([
             'user_id' => $this->id,
         ]);
+    }
+
+    /**
+     * Custom notifications relationship.
+     *
+     * This allows SoftDeletes to work with
+     * notification records.
+     */
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(
+            UserNotification::class,
+            'notifiable'
+        );
     }
 }

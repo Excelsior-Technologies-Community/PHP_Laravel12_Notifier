@@ -12,6 +12,7 @@ use App\Http\Controllers\NotificationPreferenceController;
 */
 
 Route::prefix('users')->group(function () {
+
     Route::post('/', [
         UserController::class,
         'createTestUser',
@@ -23,6 +24,7 @@ Route::prefix('users')->group(function () {
     ]);
 });
 
+
 /*
 |--------------------------------------------------------------------------
 | Notification Routes
@@ -31,7 +33,12 @@ Route::prefix('users')->group(function () {
 
 Route::prefix('notifications')->group(function () {
 
-    // Send notifications
+    /*
+    |--------------------------------------------------------------------------
+    | Send Notifications
+    |--------------------------------------------------------------------------
+    */
+
     Route::post('/welcome/{userId}', [
         NotificationController::class,
         'sendWelcomeNotification',
@@ -47,13 +54,37 @@ Route::prefix('notifications')->group(function () {
         'broadcastNotification',
     ]);
 
-    // User notifications
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification List
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/user/{userId}', [
         NotificationController::class,
         'getUserNotifications',
     ]);
 
-    // Notification management
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification Details
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/user/{userId}/{notificationId}', [
+        NotificationController::class,
+        'show',
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark As Read
+    |--------------------------------------------------------------------------
+    */
+
     Route::post('/mark-as-read/{userId}/{notificationId}', [
         NotificationController::class,
         'markAsRead',
@@ -64,12 +95,76 @@ Route::prefix('notifications')->group(function () {
         'markAllAsRead',
     ]);
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
     Route::delete('/delete/{userId}/{notificationId}', [
         NotificationController::class,
         'deleteNotification',
     ]);
 
-    // Notification preferences
+
+    /*
+    |--------------------------------------------------------------------------
+    | Trash
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/trash/{userId}', [
+        NotificationController::class,
+        'trash',
+    ])->name('notifications.trash');
+
+    Route::post('/restore/{userId}/{notificationId}', [
+        NotificationController::class,
+        'restoreNotification',
+    ])->name('notifications.restore');
+
+    Route::delete('/force-delete/{userId}/{notificationId}', [
+        NotificationController::class,
+        'forceDeleteNotification',
+    ])->name('notifications.force-delete');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Search / Filter / Sort
+    |--------------------------------------------------------------------------
+    |
+    | These are handled by /user/{userId}.
+    |
+    | Example:
+    |
+    | /api/notifications/user/1?search=order
+    | /api/notifications/user/1?status=unread
+    | /api/notifications/user/1?type=order
+    | /api/notifications/user/1?sort=oldest
+    |
+    */
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export CSV
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/export/{userId}', [
+        NotificationController::class,
+        'exportCsv',
+    ])->name('notifications.export');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Preferences
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/preferences/{userId}', [
         NotificationPreferenceController::class,
         'show',
@@ -80,7 +175,13 @@ Route::prefix('notifications')->group(function () {
         'update',
     ]);
 
-    // Notification analytics
+
+    /*
+    |--------------------------------------------------------------------------
+    | Analytics
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/analytics', [
         NotificationController::class,
         'analytics',
