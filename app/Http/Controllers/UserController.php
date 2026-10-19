@@ -17,12 +17,16 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
+            'role' => 'nullable|string|in:admin,customer,vendor,user',
+            'status' => 'nullable|string|in:active,inactive,vip',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $request->input('role', 'user'),
+            'status' => $request->input('status', 'active'),
         ]);
 
         // Create default notification preferences.

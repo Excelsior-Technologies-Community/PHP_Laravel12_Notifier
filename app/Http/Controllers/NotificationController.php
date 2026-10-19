@@ -7,6 +7,7 @@ use App\Models\UserNotification;
 use App\Notifications\WelcomeNotification;
 use App\Notifications\OrderShippedNotification;
 use App\Notifications\InvoicePaidNotification;
+use App\Notifications\CustomTemplateNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Response;
@@ -72,17 +73,102 @@ class NotificationController extends Controller
     }
 
     /**
-     * Send notification to multiple users.
+     * Send custom template notification to a single user.
      */
-    public function broadcastNotification()
+    public function sendCustomNotification(Request $request, $userId)
     {
-        $users = User::all();
+        $user = User::findOrFail($userId);
+
+        $validated = $request->validate([
+            'title'       => 'required|string|max:255',
+            'message'     => 'required|string|max:2000',
+            'priority'    => 'nullable|string|in:info,success,warning,critical',
+            'action_text' => 'nullable|string|max:100',
+            'action_url'  => 'nullable|string|max:255',
+            'send_email'  => 'nullable|boolean',
+            'order_id'    => 'nullable|string|max:50',
+            'amount'      => 'nullable|string|max:50',
+        ]);
+
+        $payload = [
+            'raw_title'   => $validated['title'],
+            'raw_message' => $validated['message'],
+            'priority'    => $validated['priority'] ?? 'info',
+            'action_text' => $validated['action_text'] ?? null,
+            'action_url'  => $validated['action_url'] ?? null,
+            'send_email'  => (bool) ($validated['send_email'] ?? false),
+            'metadata'    => [
+                'order_id' => $validated['order_id'] ?? 'ORD-' . random_int(1000, 9999),
+                'amount'   => $validated['amount'] ?? '₹1,500',
+            ],
+        ];
+
+        $user->notify(new CustomTemplateNotification($payload));
+
+        return response()->json([
+            'message' => 'Custom notification sent successfully!',
+            'user'    => $user->name,
+            'sent'    => true,
+        ]);
+    }
+
+    /**
+     * Send notification to multiple users with audience targeting and custom template support.
+     */
+    public function broadcastNotification(Request $request)
+    {
+        $targetAudience = $request->input('audience', 'all'); // all, role, status
+        $targetRole     = $request->input('role');
+        $targetStatus   = $request->input('status');
+
+        $query = User::query();
+
+        if ($targetAudience === 'role' && $targetRole) {
+            $query->where('role', $targetRole);
+        } elseif ($targetAudience === 'status' && $targetStatus) {
+            $query->where('status', $targetStatus);
+        }
+
+        $users = $query->get();
+
+        if ($users->isEmpty()) {
+            return response()->json([
+                'message'     => 'No users found in the selected target audience segment.',
+                'users_count' => 0,
+            ], 422);
+        }
+
+        // Custom template broadcast or standard system broadcast
+        if ($request->filled('title') && $request->filled('message')) {
+            $payload = [
+                'raw_title'   => $request->input('title'),
+                'raw_message' => $request->input('message'),
+                'priority'    => $request->input('priority', 'info'),
+                'action_text' => $request->input('action_text'),
+                'action_url'  => $request->input('action_url'),
+                'send_email'  => (bool) $request->input('send_email', false),
+                'metadata'    => [
+                    'order_id' => $request->input('order_id', 'ORD-' . random_int(1000, 9999)),
+                    'amount'   => $request->input('amount', '₹2,499'),
+                ],
+            ];
+
+            foreach ($users as $user) {
+                $user->notify(new CustomTemplateNotification($payload));
+            }
+
+            return response()->json([
+                'message'     => "Custom targeted broadcast sent to {$users->count()} users!",
+                'users_count' => $users->count(),
+                'segment'     => $targetAudience,
+            ]);
+        }
 
         $notificationData = [
-            'title' => 'System Update',
+            'title'   => 'System Update',
             'message' => 'Our system will undergo maintenance on Friday at 2 AM.',
-            'type' => 'system',
-            'icon' => 'bell',
+            'type'    => 'system',
+            'icon'    => 'bell',
         ];
 
         Notification::send(
@@ -91,8 +177,9 @@ class NotificationController extends Controller
         );
 
         return response()->json([
-            'message' => 'Broadcast notification sent to all eligible users!',
+            'message'     => "Broadcast notification sent to {$users->count()} users!",
             'users_count' => $users->count(),
+            'segment'     => $targetAudience,
         ]);
     }
 
@@ -280,6 +367,90 @@ class NotificationController extends Controller
             'unread_count' => $user
                 ->unreadNotifications()
                 ->count(),
+        ]);
+    }
+
+    /**
+     * Batch Mark Selected Notifications As Read.
+     */
+    public function batchMarkAsRead(Request $request, $userId)
+    {
+        $user = User::findOrFail($userId);
+
+        $request->validate([
+            'notification_ids'   => 'required|array|min:1',
+            'notification_ids.*' => 'required|string',
+        ]);
+
+        $ids = $request->input('notification_ids');
+
+        $affected = $user->notifications()
+            ->whereIn('id', $ids)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json([
+            'message'      => "{$affected} notification(s) marked as read!",
+            'affected'     => $affected,
+            'unread_count' => $user->unreadNotifications()->count(),
+        ]);
+    }
+
+    /**
+     * Batch Move Selected Notifications To Trash.
+     */
+    public function batchDelete(Request $request, $userId)
+    {
+        $user = User::findOrFail($userId);
+
+        $request->validate([
+            'notification_ids'   => 'required|array|min:1',
+            'notification_ids.*' => 'required|string',
+        ]);
+
+        $ids = $request->input('notification_ids');
+
+        $affected = $user->notifications()
+            ->whereIn('id', $ids)
+            ->delete();
+
+        return response()->json([
+            'message'      => "{$affected} notification(s) moved to trash!",
+            'affected'     => $affected,
+            'unread_count' => $user->unreadNotifications()->count(),
+        ]);
+    }
+
+    /**
+     * Real-time / Long-poll endpoint for floating bell dropdown & live toast.
+     */
+    public function livePoll(Request $request, $userId)
+    {
+        $user = User::findOrFail($userId);
+        $since = $request->input('since'); // ISO date string or timestamp
+
+        $unreadCount = $user->unreadNotifications()->count();
+        $totalCount  = $user->notifications()->count();
+
+        // Latest 5 unread notifications for dropdown
+        $recentUnread = $user->unreadNotifications()
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // New notifications since last check (for instant audio chime & toast)
+        $newQuery = $user->notifications()->latest();
+        if ($since) {
+            $newQuery->where('created_at', '>', $since);
+        }
+        $newNotifications = $since ? $newQuery->get() : collect();
+
+        return response()->json([
+            'unread_count'      => $unreadCount,
+            'total_count'       => $totalCount,
+            'recent_unread'     => $recentUnread,
+            'new_notifications' => $newNotifications,
+            'server_time'       => now()->toIso8601String(),
         ]);
     }
 
