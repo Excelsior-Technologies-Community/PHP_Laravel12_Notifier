@@ -49,9 +49,29 @@ Route::prefix('notifications')->group(function () {
         'sendOrderShippedNotification',
     ]);
 
+    Route::post('/custom/{userId}', [
+        NotificationController::class,
+        'sendCustomNotification',
+    ]);
+
     Route::post('/broadcast', [
         NotificationController::class,
         'broadcastNotification',
+    ]);
+
+    Route::get('/live-poll/{userId}', [
+        NotificationController::class,
+        'livePoll',
+    ]);
+
+    Route::post('/batch-mark-as-read/{userId}', [
+        NotificationController::class,
+        'batchMarkAsRead',
+    ]);
+
+    Route::post('/batch-delete/{userId}', [
+        NotificationController::class,
+        'batchDelete',
     ]);
 
 
